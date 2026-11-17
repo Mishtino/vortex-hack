@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vortex-hack"
-version = "0.2.0"
+version = "0.3.0"
 description = "Vortex Technologies authorized website configuration review toolkit"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,6 +13,7 @@ dependencies = []
 
 [project.scripts]
 vortex-hack = "vortex:main"
+vortex-compare = "vortex_compare:main"
 
 [tool.setuptools]
-py-modules = ["vortex", "vortex_report"]
+py-modules = ["vortex", "vortex_report", "vortex_compare"]

@@ -4,6 +4,7 @@ import argparse
 from collections import Counter
 import datetime
 import email.message
+import hashlib
 import json
 import math
 import re
@@ -16,7 +17,7 @@ from pathlib import Path
 
 from vortex_report import render_html
 
-VERSION = '0.2.0'
+VERSION = '0.3.0'
 MAX_TARGETS = 20
 LIMITATIONS = ('Configuration observations require manual verification. One HEAD response per URL; '
                'no body, login, exploitation, crawling or redirect following. Missing headers alone '
@@ -137,6 +138,8 @@ def scan(url, timeout=10):
         status, headers = response.code, response.headers
     return {'target': url, 'status': status, 'outcome': 'completed',
             'duration_ms': round((time.monotonic() - started) * 1000),
+            'assessment': {'profile': 'head-config-v2', 'method': 'HEAD',
+                           'status': status, 'media_type': headers.get('Content-Type', '').split(';')[0].strip().lower()},
             'findings': analyze(url, status, headers)}
 
 
@@ -165,7 +168,15 @@ def run_scan(targets, timeout=10, delay=1.0):
     return build_report(results)
 
 
+def finding_id(target, check):
+    payload = json.dumps([target, check], separators=(',', ':'), ensure_ascii=True)
+    return 'VX-' + hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+
 def build_report(results, demo=False):
+    for result in results:
+        for finding in result['findings']:
+            finding['id'] = finding_id(result['target'], finding['check'])
     counts = Counter(f['severity'] for result in results for f in result['findings'])
     return {'schema_version': 2, 'tool': 'Vortex Hack', 'version': VERSION,
             'time_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -180,9 +191,11 @@ def demo_report():
     headers['Content-Type'] = 'text/html'
     return build_report([
         {'target': 'https://practice.example/', 'status': 200, 'outcome': 'completed', 'duration_ms': 42,
+         'assessment': {'profile': 'head-config-v2', 'method': 'HEAD', 'status': 200, 'media_type': 'text/html'},
          'findings': analyze('https://practice.example/', 200, headers)},
         {'target': 'https://api.practice.example/', 'status': 200, 'outcome': 'completed',
-         'duration_ms': 31, 'findings': []},
+         'duration_ms': 31,
+         'assessment': {'profile': 'head-config-v2', 'method': 'HEAD', 'status': 200, 'media_type': 'application/json'}, 'findings': []},
         {'target': 'https://offline.practice.example/', 'status': None, 'outcome': 'error',
          'error': 'Demonstration connection failure.', 'findings': []}], demo=True)
 

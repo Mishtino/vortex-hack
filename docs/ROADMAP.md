@@ -1,13 +1,12 @@
 # Product roadmap
 
-## Delivered: 0.2
+## Delivered: 0.3
 
-Bounded batch reviews, exact URL approval, configuration evidence, private standalone HTML reports, JSON v2, offline preview, package entry point and automated test configuration.
+Bounded batch reviews, exact URL approval, configuration evidence, private standalone HTML reports, JSON v2, offline preview, package entry point automated test configuration, stable finding IDs and conservative offline report comparison.
 
 ## Next: stronger evidence
 
 - Certificate expiry and negotiated TLS metadata with separate evidence and tests.
-- Stable finding identities and comparison between two saved reports.
 - Explicitly approved GET checks for servers that reject HEAD, with response size limits.
 - Better policy parsing and context to reduce misleading findings.
 

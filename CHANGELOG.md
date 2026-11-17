@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0
+
+- Offline JSON and HTML comparison with new, changed, persistent, resolved and unverified groups.
+- Stable URL/check finding IDs; duplicate observations retain their counts.
+- Per-response assessment metadata prevents connection failures and changed coverage from being counted as fixes.
+- Bounded report imports, legacy compatibility, demo separation and comparison exit thresholds.
+- Reproducible comparison examples and local-only regression tests.
+
 ## 0.2.0
 
 - Batch checks against up to 20 exact approved URLs, with sequential requests and a one-second pause.

@@ -1,0 +1,79 @@
+{
+  "schema_version": 2,
+  "tool": "Vortex Hack",
+  "version": "0.3.0",
+  "time_utc": "2026-11-17T19:27:24.562312+00:00",
+  "demo": true,
+  "limitations": "Configuration observations require manual verification. One HEAD response per URL; no body, login, exploitation, crawling or redirect following. Missing headers alone do not establish an exploitable vulnerability. HEAD may differ from normal page responses.",
+  "summary": {
+    "targets": 3,
+    "completed": 1,
+    "errors": 2,
+    "findings": 4,
+    "by_severity": {
+      "low": 3,
+      "review": 1
+    }
+  },
+  "results": [
+    {
+      "target": "https://practice.example/",
+      "status": 200,
+      "outcome": "completed",
+      "duration_ms": 42,
+      "assessment": {
+        "profile": "head-config-v2",
+        "method": "HEAD",
+        "status": 200,
+        "media_type": "text/html"
+      },
+      "findings": [
+        {
+          "check": "missing_x-content-type-options",
+          "severity": "low",
+          "confidence": "observed",
+          "evidence": "X-Content-Type-Options was absent.",
+          "recommendation": "Set X-Content-Type-Options: nosniff.",
+          "id": "VX-b65dcf8348b09c0a"
+        },
+        {
+          "check": "missing_referrer-policy",
+          "severity": "low",
+          "confidence": "observed",
+          "evidence": "Referrer-Policy was absent on this HTML response.",
+          "recommendation": "Review and explicitly set Referrer-Policy: no-referrer for this synthetic example.",
+          "id": "VX-37af8939e172657f"
+        },
+        {
+          "check": "framing_policy_absent",
+          "severity": "low",
+          "confidence": "observed",
+          "evidence": "No X-Frame-Options or CSP frame-ancestors directive observed.",
+          "recommendation": "Restrict framing if this page should not be embedded.",
+          "id": "VX-72f52414cd0d6f24"
+        },
+        {
+          "check": "cookie_attributes",
+          "severity": "review",
+          "evidence": "A response cookie lacks: httponly",
+          "recommendation": "Review cookie purpose and use HttpOnly where appropriate.",
+          "id": "VX-6d8d87fbbd4d7089"
+        }
+      ]
+    },
+    {
+      "target": "https://api.practice.example/",
+      "outcome": "error",
+      "status": null,
+      "error": "Demonstration connection failure.",
+      "findings": []
+    },
+    {
+      "target": "https://offline.practice.example/",
+      "status": null,
+      "outcome": "error",
+      "error": "Demonstration connection failure.",
+      "findings": []
+    }
+  ]
+}

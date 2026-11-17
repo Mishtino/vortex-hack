@@ -1,6 +1,6 @@
 # Vortex Hack
 
-**Vortex Technologies · version 0.2.0**
+**Vortex Technologies · version 0.3.0**
 
 A Python toolkit for authorized website configuration reviews. Approve exact URLs, run bounded checks, and review evidence and remediation in JSON or a standalone HTML report. Python 3.10+; no runtime dependencies.
 
@@ -74,6 +74,38 @@ No vulnerability score is assigned. Severity is a triage aid. One HEAD response 
 
 HTML reports have no JavaScript, remote fonts, analytics or external assets. Report text is escaped and the HTML includes a restrictive content security policy.
 
+## Compare reviews offline
+
+Save one scan before a configuration change and another afterward, then compare the JSON files:
+
+```bash
+python3 vortex_compare.py --baseline before.json --current after.json --output changes.json --html changes.html
+```
+
+The comparator makes no network requests. After installation it is also available as `vortex-compare`.
+
+| State | Meaning |
+| --- | --- |
+| New | A check appears in the current report |
+| Persistent | The same check and observations remain |
+| Changed | Severity, evidence, recommendation or duplicate count changed |
+| Resolved | No longer observed under matching successful assessment coverage |
+| Unverified | A target failed, was omitted, changed coverage, or lacks comparable coverage metadata |
+
+Resolved is an observation, not proof that an exploitable vulnerability was fixed. Comparison groups findings by exact target URL and check; duplicate cookie observations retain their counts. Stable finding IDs are derived from the URL and check, not cookie identities. Severity and recommendation changes are tracked as changed, not automatically classified as regressions.
+
+Coverage includes the check profile, method, status and response media type. Legacy v0.2 reports can be imported but cannot establish resolution without coverage metadata. Imported reports are validated, capped at 5 MiB each and treated as untrusted text; authenticity is not verified. Demo and real reports cannot be mixed.
+
+Add `--fail-on-new` to return exit code 2 when new or changed groups exist; otherwise comparison returns 0, or 1 on invalid input or write failure. Existing output files are protected. Scan exit codes are documented below.
+
+A reproducible synthetic comparison is included:
+
+```bash
+python3 vortex_compare.py --baseline docs/demo-baseline.json --current docs/demo-current.json --output example-changes.json --html example-changes.html
+```
+
+Open `docs/demo-comparison.html` for the generated preview. All sample reports are labeled as demonstrations.
+
 ## Automation and installation
 
 Optional local installation provides the `vortex-hack` command:
@@ -87,7 +119,7 @@ The direct `python3 vortex.py` command needs no installation. Package installati
 
 Use `--timeout 10` to set the socket timeout (1–30 seconds). This is not a strict total wall-clock deadline: DNS and slow responses can take longer.
 
-`--fail-on medium` returns exit code 2 for medium observations. `low` also includes low observations; `review` includes review observations as well. Connection errors return exit code 1 and retain results from other targets. A successful run returns 0. Demo mode always returns 0 after writing its sample report. JSON schema version 2 contains `summary` and a `results` array; it replaces the v0.1 single-target top-level fields.
+`--fail-on medium` returns exit code 2 for medium observations. `low` also includes low observations; `review` includes review observations as well. Connection errors return exit code 1 and retain results from other targets. A successful run returns 0. Demo mode always returns 0 after writing its sample report. JSON schema version 2 contains stable finding IDs, per-response assessment metadata, `summary` and a `results` array; it replaces the v0.1 single-target top-level fields.
 
 ## Verification
 
@@ -95,6 +127,6 @@ Use `--timeout 10` to set the socket timeout (1–30 seconds). This is not a str
 python3 -m unittest discover -s tests -v
 ```
 
-Tests use a local HTTP server and mocked failures. They verify redirect isolation, CLI reports, whole-batch scope validation, redaction, HTML escaping, policy interpretation and output protection. GitHub Actions runs the suite and builds a package on Python 3.10, 3.12 and 3.13.
+Tests use a local HTTP server and mocked failures. They verify redirect isolation, CLI reports, whole-batch scope validation, redaction, HTML escaping, policy interpretation output protection and conservative offline comparisons. GitHub Actions runs the suite and builds a package on Python 3.10, 3.12 and 3.13.
 
 See `CHANGELOG.md` and `docs/ROADMAP.md` for release changes and planned work.
