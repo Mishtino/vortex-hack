@@ -112,13 +112,15 @@ def analyze(url, status, headers):
             if not match or not match.group(1).strip('0'):
                 add('hsts_not_enforced', 'review', 'HSTS had no valid positive max-age.',
                     'Review the policy and use a positive max-age when HTTPS is ready.')
+    cookie_missing = Counter()
     for raw in headers.get_all('Set-Cookie', []):
         # Values and cookie names are never retained in findings.
         attrs = {part.strip().split('=', 1)[0].lower() for part in raw.split(';')[1:]}
-        missing = sorted({'secure', 'httponly', 'samesite'} - attrs)
-        if missing:
-            add('cookie_attributes', 'review', 'A response cookie lacks: ' + ', '.join(missing),
-                'Review the cookie purpose; apply these attributes where appropriate.')
+        cookie_missing.update({'secure', 'httponly', 'samesite'} - attrs)
+    if cookie_missing:
+        evidence = ', '.join(f'{key}: {count}' for key, count in sorted(cookie_missing.items()))
+        add('cookie_attributes', 'review', 'Missing cookie attribute counts: ' + evidence,
+            'Review the cookie purpose; apply these attributes where appropriate.')
     return findings
 
 
