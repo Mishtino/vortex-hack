@@ -58,6 +58,20 @@ class Tests(unittest.TestCase):
         self.assertNotIn('session', str(findings))
         self.assertIn('cookie_attributes', str(findings))
 
+    def test_multiple_cookies_have_one_stable_redacted_finding(self):
+        h = headers(Content_Type='text/html')
+        h.add_header('Set-Cookie', 'first=SECRET1; Secure')
+        h.add_header('Set-Cookie', 'second=SECRET2; HttpOnly')
+        findings = analyze('https://example.com/', 200, h)
+        cookies = [f for f in findings if f['check'] == 'cookie_attributes']
+        self.assertEqual(len(cookies), 1)
+        self.assertIn('samesite: 2', cookies[0]['evidence'])
+        self.assertIn('secure: 1', cookies[0]['evidence'])
+        self.assertIn('httponly: 1', cookies[0]['evidence'])
+        self.assertNotIn('SECRET', str(cookies))
+        self.assertNotIn('first', str(cookies))
+        self.assertNotIn('second', str(cookies))
+
     def test_api_does_not_get_html_specific_findings(self):
         result = analyze('https://example.com/', 200, headers(Content_Type='application/json'))
         keys = [f['check'] for f in result]
