@@ -50,6 +50,8 @@ def review(report, model="qwen3:4b"):
     if len(raw) > 65536:
         raise ValueError("Response too large")
     envelope = json.loads(raw)
+    if envelope.get("done") is False or envelope.get("done_reason") == "length":
+        raise ValueError("Ollama response was incomplete.")
     content = envelope["message"]["content"]
     if not isinstance(content, str) or not content.strip():
         raise ValueError("Ollama returned empty content; check model generation settings.")
@@ -57,7 +59,7 @@ def review(report, model="qwen3:4b"):
         answer = json.loads(content)
     except json.JSONDecodeError:
         raise ValueError("Ollama returned invalid JSON content.") from None
-    if not isinstance(answer, dict) or set(answer) != {"summary"} or not isinstance(answer["summary"], str) or not 0 < len(answer["summary"].strip()) <= 4000:
+    if not isinstance(answer, dict) or set(answer) != {"summary"} or not isinstance(answer["summary"], str) or not 0 < len(answer["summary"].strip()) or len(answer["summary"]) > 4000:
         raise ValueError("AI response must contain exactly one nonempty summary string.")
     return {"model": model, "advisory_only": True, "counts": counts, "coverage": audit_coverage, "summary": answer["summary"]}
 
