@@ -1,7 +1,7 @@
 import json
 import unittest
 from unittest.mock import patch, MagicMock
-from vortex_ai import review, summarize
+from vortex_ai import review, summarize, coverage
 
 
 class LocalReviewTests(unittest.TestCase):
@@ -17,6 +17,15 @@ class LocalReviewTests(unittest.TestCase):
             self.assertNotIn(b"SECRET", request.data)
             self.assertEqual(result["counts"]["low"], 1)
             self.assertTrue(result["advisory_only"])
+
+    def test_coverage_reports_failed_assessments_and_demo(self):
+        report = {"demo": True, "results": [{"outcome": "completed"}, {"outcome": "error"}]}
+        result = coverage(report)
+        self.assertEqual(result["targets"], 2)
+        self.assertEqual(result["completed"], 1)
+        self.assertEqual(result["errors"], 1)
+        self.assertTrue(result["demo"])
+        self.assertIn("unknown", result["limitations"])
 
     def test_unknown_severity_rejected(self):
         with self.assertRaises(ValueError):
