@@ -25,8 +25,8 @@ def review(report, model="qwen3:4b"):
     if model not in MODELS:
         raise ValueError("Choose a supported local model")
     counts = summarize(report)
-    payload = {"model": model, "stream": False, "format": "json",
-               "options": {"temperature": 0.1, "num_predict": 512},
+    payload = {"model": model, "stream": False, "think": False, "format": "json",
+               "options": {"temperature": 0.1, "num_predict": 1024},
                "messages": [
                    {"role": "system", "content": "Explain aggregate configuration audit counts for a defensive report. Do not invent vulnerabilities. Return JSON with one string key summary. Recommend manual verification and remediation planning only."},
                    {"role": "user", "content": json.dumps(counts)}]}
@@ -37,7 +37,14 @@ def review(report, model="qwen3:4b"):
         raw = response.read(65537)
     if len(raw) > 65536:
         raise ValueError("Response too large")
-    answer = json.loads(json.loads(raw)["message"]["content"])
+    envelope = json.loads(raw)
+    content = envelope["message"]["content"]
+    if not isinstance(content, str) or not content.strip():
+        raise ValueError("Ollama returned empty content; check model generation settings.")
+    try:
+        answer = json.loads(content)
+    except json.JSONDecodeError:
+        raise ValueError("Ollama returned invalid JSON content.") from None
     if not isinstance(answer, dict) or set(answer) != {"summary"} or not isinstance(answer["summary"], str) or not 0 < len(answer["summary"]) <= 4000:
         raise ValueError("Unexpected AI response")
     return {"model": model, "advisory_only": True, "counts": counts, "summary": answer["summary"]}
@@ -60,7 +67,7 @@ def main():
             raise ValueError("Report too large")
         print(json.dumps(review(json.loads(raw), args.model), indent=2))
     except (OSError, ValueError, TypeError, KeyError, AttributeError):
-        parser.exit(1, "Local AI review failed; check report format and Ollama availability.\\n")
+        parser.exit(1, "Local AI review failed; check report format and Ollama availability.\n")
 
 
 if __name__ == "__main__":
