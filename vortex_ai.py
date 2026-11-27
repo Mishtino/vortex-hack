@@ -25,10 +25,11 @@ def review(report, model="qwen3:4b"):
     if model not in MODELS:
         raise ValueError("Choose a supported local model")
     counts = summarize(report)
-    payload = {"model": model, "stream": False, "think": False, "format": "json",
+    payload = {"model": model, "stream": False, "think": False, "format": {"type": "object", "properties": {"summary": {"type": "string"}},
+                          "required": ["summary"], "additionalProperties": False},
                "options": {"temperature": 0.1, "num_predict": 1024},
                "messages": [
-                   {"role": "system", "content": "Explain aggregate configuration audit counts for a defensive report. Do not invent vulnerabilities. Return JSON with one string key summary. Recommend manual verification and remediation planning only."},
+                   {"role": "system", "content": "Explain aggregate configuration audit counts for a defensive report. Do not invent vulnerabilities. Return exactly one JSON object matching {\"summary\": \"brief advisory text\"}; no other keys. Recommend manual verification and remediation planning only."},
                    {"role": "user", "content": json.dumps(counts)}]}
     request = urllib.request.Request(ENDPOINT, data=json.dumps(payload).encode(),
                                      headers={"Content-Type": "application/json"})
@@ -45,8 +46,8 @@ def review(report, model="qwen3:4b"):
         answer = json.loads(content)
     except json.JSONDecodeError:
         raise ValueError("Ollama returned invalid JSON content.") from None
-    if not isinstance(answer, dict) or set(answer) != {"summary"} or not isinstance(answer["summary"], str) or not 0 < len(answer["summary"]) <= 4000:
-        raise ValueError("Unexpected AI response")
+    if not isinstance(answer, dict) or set(answer) != {"summary"} or not isinstance(answer["summary"], str) or not 0 < len(answer["summary"].strip()) <= 4000:
+        raise ValueError("AI response must contain exactly one nonempty summary string.")
     return {"model": model, "advisory_only": True, "counts": counts, "summary": answer["summary"]}
 
 
