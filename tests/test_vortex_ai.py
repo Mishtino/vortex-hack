@@ -27,6 +27,26 @@ class LocalReviewTests(unittest.TestCase):
         self.assertTrue(result["demo"])
         self.assertIn("unknown", result["limitations"])
 
+    def test_incomplete_model_response_rejected(self):
+        report = {"results": []}
+        with patch("vortex_ai.urllib.request.build_opener") as build:
+            response = build.return_value.open.return_value.__enter__.return_value
+            response.read.return_value = json.dumps({
+                "done": True, "done_reason": "length",
+                "message": {"content": '{"summary":"Partial advice."}'}
+            }).encode()
+            with self.assertRaisesRegex(ValueError, "incomplete"):
+                review(report)
+
+    def test_oversized_summary_rejected(self):
+        with patch("vortex_ai.urllib.request.build_opener") as build:
+            response = build.return_value.open.return_value.__enter__.return_value
+            response.read.return_value = json.dumps({
+                "message": {"content": json.dumps({"summary": " " * 4000 + "Advice"})}
+            }).encode()
+            with self.assertRaises(ValueError):
+                review({"results": []})
+
     def test_unknown_severity_rejected(self):
         with self.assertRaises(ValueError):
             summarize({"results": [{"findings": [{"severity": "unknown"}]}]})
